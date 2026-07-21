@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Справка — Клиент v2RayTun</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.55; color: #1e293b; margin: 0; padding: 1.25rem; max-width: 42rem; }
+    h1 { font-size: 1.15rem; margin: 0 0 0.75rem; }
+    h2 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; }
+    p, li { font-size: 0.875rem; }
+    code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Клиент v2RayTun (VLESS)</h1>
+  <p>
+    Запускает <strong>Xray-core</strong> в PyOrchestrator как VLESS-клиент.
+    Вставьте URL подписки или ссылку <code>vless://</code>. Модуль поднимает локальные
+    прокси <strong>SOCKS5</strong> и <strong>HTTP</strong> (без TUN и без VPN на хосте).
+  </p>
+
+  <h2>Настройка</h2>
+  <ol>
+    <li>Установите модуль из каталога и откройте «Настройки».</li>
+    <li>Вставьте ссылку подписки или <code>vless://</code>.</li>
+    <li>При необходимости задайте порты и индекс сервера.</li>
+    <li>Сохраните настройки и нажмите <strong>Запустить</strong>.</li>
+    <li>Смотрите обзор и логи.</li>
+  </ol>
+
+  <h2>Прокси из других контейнеров</h2>
+  <p>В Docker-сети указывайте хост <code>pyorch-runtime</code>:</p>
+  <ul>
+    <li><code>HTTP_PROXY=http://pyorch-runtime:10809</code></li>
+    <li><code>HTTPS_PROXY=http://pyorch-runtime:10809</code></li>
+    <li><code>ALL_PROXY=socks5://pyorch-runtime:10808</code></li>
+  </ul>
+
+  <h2>Замечания</h2>
+  <ul>
+    <li>Xray скачивается один раз в <code>data/bin/</code> (GitHub и зеркала).</li>
+    <li>Пустое поле ссылки при сохранении не затирает уже сохранённое значение.</li>
+    <li>Режим TUN в песочнице модуля не поддерживается.</li>
+  </ul>
+</body>
+</html>

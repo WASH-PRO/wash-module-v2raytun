@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>v2RayTun Client</title>
+  <link rel="stylesheet" href="wash-module-ui.css" />
+</head>
+<body class="wm-body">
+  <div id="wm-app"></div>
+  <script src="wash-module-sdk.js"></script>
+  <script>
+    WashModule.createPage({
+      moduleId: 'v2raytun',
+      accent: '#0f766e',
+      refreshInterval: 8000,
+      title: { ru: 'Клиент v2RayTun (VLESS)', en: 'v2RayTun Client (VLESS)' },
+      subtitle: {
+        ru: 'Локальный SOCKS/HTTP-прокси через Xray-core по ссылке подписки или vless://.',
+        en: 'Local SOCKS/HTTP proxy via Xray-core from a subscription or vless:// link.',
+      },
+      settingsHtml: `
+        <div class="wm-field">
+          <label class="wm-field-label" for="share_link_secret">${WashModule.t({ ru: 'Ссылка подписки или VLESS', en: 'Subscription or VLESS link' })}</label>
+          <textarea class="wm-input" id="share_link_secret" name="share_link_secret" rows="3" style="resize:vertical;font-family:ui-monospace,monospace;font-size:0.8rem" placeholder="https://…/sub/…  or  vless://…"></textarea>
+          <span class="wm-field-hint">${WashModule.t({
+            ru: 'Пустое значение при сохранении не затирает уже сохранённую ссылку. Поддерживаются base64-подписки и прямые vless://.',
+            en: 'Leaving empty on save keeps the previously stored link. Supports base64 subscriptions and raw vless://.',
+          })}</span>
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="socks_port">${WashModule.t({ ru: 'Порт SOCKS5', en: 'SOCKS5 port' })}</label>
+          <input class="wm-input" id="socks_port" type="number" name="socks_port" min="1024" max="65535" />
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="http_port">${WashModule.t({ ru: 'Порт HTTP-прокси', en: 'HTTP proxy port' })}</label>
+          <input class="wm-input" id="http_port" type="number" name="http_port" min="1024" max="65535" />
+          <span class="wm-field-hint">${WashModule.t({
+            ru: 'Из других контейнеров: HTTP_PROXY=http://pyorch-runtime:&lt;порт&gt;',
+            en: 'From other containers: HTTP_PROXY=http://pyorch-runtime:&lt;port&gt;',
+          })}</span>
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="server_index">${WashModule.t({ ru: 'Индекс сервера', en: 'Server index' })}</label>
+          <input class="wm-input" id="server_index" type="number" name="server_index" min="0" max="99" />
+          <span class="wm-field-hint">${WashModule.t({ ru: '0 — первый VLESS из подписки.', en: '0 — first VLESS entry in the subscription.' })}</span>
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="refresh_interval">${WashModule.t({ ru: 'Обновление подписки (сек)', en: 'Subscription refresh (sec)' })}</label>
+          <input class="wm-input" id="refresh_interval" type="number" name="refresh_interval" min="300" max="86400" />
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="healthcheck_interval">${WashModule.t({ ru: 'Интервал проверки (сек)', en: 'Health check interval (sec)' })}</label>
+          <input class="wm-input" id="healthcheck_interval" type="number" name="healthcheck_interval" min="15" max="3600" />
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="healthcheck_url">${WashModule.t({ ru: 'URL проверки', en: 'Health check URL' })}</label>
+          <input class="wm-input" id="healthcheck_url" type="text" name="healthcheck_url" />
+        </div>
+        <div class="wm-field">
+          <label class="wm-field-label" for="xray_version">${WashModule.t({ ru: 'Версия Xray', en: 'Xray version' })}</label>
+          <input class="wm-input" id="xray_version" type="text" name="xray_version" placeholder="v26.3.27" />
+          <span class="wm-field-hint">${WashModule.t({
+            ru: 'Тег релиза XTLS/Xray-core. Бинарник кэшируется в data/bin/.',
+            en: 'XTLS/Xray-core release tag. Binary is cached in data/bin/.',
+          })}</span>
+        </div>`,
+      collectSettings(form) {
+        return {
+          share_link_secret: String(form.share_link_secret.value || ''),
+          socks_port: Number(form.socks_port.value),
+          http_port: Number(form.http_port.value),
+          server_index: Number(form.server_index.value),
+          refresh_interval: Number(form.refresh_interval.value),
+          healthcheck_interval: Number(form.healthcheck_interval.value),
+          healthcheck_url: String(form.healthcheck_url.value || ''),
+          xray_version: String(form.xray_version.value || ''),
+        };
+      },
+      applySettings(settings, form) {
+        // Leave blank to keep previously stored secret (modules-bridge preserves *_secret).
+        form.share_link_secret.value = '';
+        form.share_link_secret.placeholder = settings.share_link_secret
+          ? WashModule.t({
+              ru: '•••• сохранено — вставьте новую ссылку, чтобы заменить',
+              en: '•••• saved — paste a new link to replace',
+            })
+          : 'https://…/sub/…  or  vless://…';
+        form.socks_port.value = settings.socks_port ?? 10808;
+        form.http_port.value = settings.http_port ?? 10809;
+        form.server_index.value = settings.server_index ?? 0;
+        form.refresh_interval.value = settings.refresh_interval ?? 3600;
+        form.healthcheck_interval.value = settings.healthcheck_interval ?? 60;
+        form.healthcheck_url.value = settings.healthcheck_url || 'https://cp.cloudflare.com/';
+        form.xray_version.value = settings.xray_version || 'v26.3.27';
+      },
+      metrics(snap) {
+        if (!snap || !snap.recordedAt) return [];
+        const health = snap.health || {};
+        return [
+          {
+            label: WashModule.t({ ru: 'Статус', en: 'Status' }),
+            value: snap.phase || '—',
+            accent: !!snap.ok,
+          },
+          {
+            label: WashModule.t({ ru: 'Канал', en: 'Tunnel' }),
+            value: health.ok
+              ? WashModule.t({ ru: 'OK', en: 'OK' })
+              : (health.detail || '—'),
+          },
+          {
+            label: WashModule.t({ ru: 'HTTP', en: 'HTTP' }),
+            value: snap.httpPort != null ? `:${snap.httpPort}` : '—',
+          },
+          {
+            label: WashModule.t({ ru: 'SOCKS', en: 'SOCKS' }),
+            value: snap.socksPort != null ? `:${snap.socksPort}` : '—',
+          },
+        ];
+      },
+      renderOverview(snap, status) {
+        if (!snap || !snap.recordedAt) {
+          const running = status && (status.activeRunStatus === 'running' || (status.state && status.state.status === 'running'));
+          const hint = running
+            ? WashModule.t({ ru: 'Ожидание первого снимка…', en: 'Waiting for the first snapshot…' })
+            : WashModule.t({ ru: 'Нет снимка — сохраните ссылку и запустите модуль.', en: 'No snapshot yet — save the link and start the module.' });
+          return `<div class="wm-empty">${WashModule.escapeHtml(hint)}</div>`;
+        }
+        const health = snap.health || {};
+        const err = snap.error ? `<p style="color:#b91c1c;margin:0.5rem 0 0">${WashModule.escapeHtml(String(snap.error))}</p>` : '';
+        return `
+          <div class="wm-card" style="margin-bottom:0.75rem">
+            <strong>${WashModule.t({ ru: 'Сервер', en: 'Server' })}</strong>
+            <p style="margin:0.35rem 0 0">
+              ${WashModule.escapeHtml(snap.remark || '—')}<br/>
+              <code>${WashModule.escapeHtml((snap.address || '') + (snap.port != null ? ':' + snap.port : ''))}</code>
+              ${snap.serverTotal != null ? ` · #${(snap.serverIndex ?? 0) + 1}/${snap.serverTotal}` : ''}
+            </p>
+            ${err}
+          </div>
+          <div class="wm-card" style="margin-bottom:0.75rem">
+            <strong>${WashModule.t({ ru: 'Прокси', en: 'Proxy' })}</strong>
+            <ul class="wm-list" style="margin:0.35rem 0 0">
+              <li>HTTP: <code>${WashModule.escapeHtml(snap.proxyHint || ('http://pyorch-runtime:' + (snap.httpPort || 10809)))}</code></li>
+              <li>SOCKS5: <code>${WashModule.escapeHtml(snap.socksHint || ('socks5://pyorch-runtime:' + (snap.socksPort || 10808)))}</code></li>
+              <li>${WashModule.t({ ru: 'Проверка', en: 'Health' })}: ${WashModule.escapeHtml(health.detail || '—')}</li>
+            </ul>
+          </div>
+          <h2 class="wm-section-title">Snapshot</h2>
+          <pre class="wm-code">${WashModule.escapeHtml(JSON.stringify(snap, null, 2))}</pre>`;
+      },
+    });
+  </script>
+</body>
+</html>

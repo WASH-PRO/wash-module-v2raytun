@@ -34,3 +34,7 @@ ALL_PROXY=socks5://pyorch-runtime:10808
 Нужен включённый PyOrchestrator (`PYORCHESTRATOR_ENABLED=true`).
 
 EN: [README.md](./README.md)
+
+---
+
+**Сайт:** [wash-pro.tech](https://wash-pro.tech) · **GitHub:** [WASH-PRO](https://github.com/WASH-PRO)
